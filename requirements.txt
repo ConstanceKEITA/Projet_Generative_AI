@@ -1,7 +1,12 @@
 # LangChain
+requests
+beautifulsoup4
+pdfplumber
+tqdm
 langchain
 langchain-community
 langchain-openai
+langchain-mistralai
 
 # Vector store
 faiss-cpu
