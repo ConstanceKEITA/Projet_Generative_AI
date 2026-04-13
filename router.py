@@ -1,37 +1,42 @@
-from src.agent.agent import Agent
-from src.rag.rag_chain import build_rag_chain
+from agent.agent import Agent
+from rag.rag_chain import ask_rag
+from memory import MemoryManager
 
+class Router:
+    """
+    Router intelligent :
+    - RAG si question documentaire
+    - Agent si un tool est nécessaire
+    - Chat simple sinon
+    - Mémoire pour conserver le contexte
+    """
 
-def build_agent():
-    """Construit l'agent avec le pipeline RAG chargé."""
+    def __init__(self):
+        self.memory = MemoryManager()
+        self.agent = Agent(rag_callable=ask_rag)
 
-    rag_chain = build_rag_chain()
+    def route(self, query: str) -> str:
+        q = query.lower()
 
-    def rag_callable(query: str) -> str:
-        result = rag_chain.invoke({"query": query})
-        answer = result["result"]
-        sources = [
-            doc.metadata.get("source", "document")
-            for doc in result.get("source_documents", [])
-        ]
-        if sources:
-            answer += f"\n\nSources : {', '.join(set(sources))}"
+        # 1. Mots-clés documentaires → RAG
+        if any(k in q for k in ["document", "politique", "procédure", "manuel", "article"]):
+            answer = ask_rag(query)
+            self.memory.add_user_message(query)
+            self.memory.add_ai_message(answer)
+            return answer
+
+        # 2. Tools → Agent
+        if any(k in q for k in ["météo", "meteo", "+", "-", "*", "/", "recherche", "google", "web"]):
+            answer = self.agent.decide_and_answer(query)
+            self.memory.add_user_message(query)
+            self.memory.add_ai_message(answer)
+            return answer
+
+        # 3. Small talk → Chat simple (mock)
+        answer = f"Réponse conversationnelle simple (mock) à : {query}"
+        self.memory.add_user_message(query)
+        self.memory.add_ai_message(answer)
         return answer
 
-    return Agent(rag_callable=rag_callable)
-
-
-if __name__ == "__main__":
-    print("Chargement de l'assistant...")
-    agent = build_agent()
-    print("Assistant prêt ! (tapez 'quit' pour quitter)\n")
-
-    while True:
-        query = input("Vous : ").strip()
-        if not query:
-            continue
-        if query.lower() in ["quit", "exit", "quitter"]:
-            print("Au revoir !")
-            break
-        response = agent.decide_and_answer(query)
-        print(f"Assistant : {response}\n")
+    def get_history(self):
+        return self.memory.get_history()
