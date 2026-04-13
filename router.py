@@ -1,37 +1,47 @@
-from src.agent.agent import Agent
-from src.rag.rag_chain import build_rag_chain
+import re
+from agent.agent import Agent
+from rag.rag_chain import ask_rag
+from memory import MemoryManager
 
 
-def build_agent():
-    """Construit l'agent avec le pipeline RAG chargé."""
+class Router:
+    """
+    Router intelligent :
+    - Météo/Calcul/Web explicite → Agent
+    - Par défaut → RAG
+    - Mémoire pour conserver le contexte
+    """
 
-    rag_chain = build_rag_chain()
+    def __init__(self):
+        self.memory = MemoryManager()
+        self.agent = Agent(rag_callable=ask_rag)
 
-    def rag_callable(query: str) -> str:
-        result = rag_chain.invoke({"query": query})
-        answer = result["result"]
-        sources = [
-            doc.metadata.get("source", "document")
-            for doc in result.get("source_documents", [])
-        ]
-        if sources:
-            answer += f"\n\nSources : {', '.join(set(sources))}"
+    def route(self, query: str) -> str:
+        q = query.lower()
+
+        # 1. Météo
+        if "météo" in q or "meteo" in q:
+            answer = self.agent.decide_and_answer(query)
+
+        # 2. Calcul
+        elif re.search(r'\d+\s*[\+\-\*\/]\s*\d+', q):
+            answer = self.agent.decide_and_answer(query)
+
+        # 3. Web explicite
+        elif "recherche" in q or "google" in q or "web" in q:
+            answer = self.agent.decide_and_answer(query)
+
+        # 4. Résumé ou citation → Agent
+        elif "résume" in q or "formate" in q or "citation" in q:
+            answer = self.agent.decide_and_answer(query)
+
+        # 5. Par défaut → RAG
+        else:
+            answer = ask_rag(query)
+
+        self.memory.add_user_message(query)
+        self.memory.add_ai_message(answer)
         return answer
 
-    return Agent(rag_callable=rag_callable)
-
-
-if __name__ == "__main__":
-    print("Chargement de l'assistant...")
-    agent = build_agent()
-    print("Assistant prêt ! (tapez 'quit' pour quitter)\n")
-
-    while True:
-        query = input("Vous : ").strip()
-        if not query:
-            continue
-        if query.lower() in ["quit", "exit", "quitter"]:
-            print("Au revoir !")
-            break
-        response = agent.decide_and_answer(query)
-        print(f"Assistant : {response}\n")
+    def get_history(self):
+        return self.memory.get_history()
