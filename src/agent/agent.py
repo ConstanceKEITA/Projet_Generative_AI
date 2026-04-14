@@ -53,6 +53,23 @@ Réponds UNIQUEMENT par OUI ou NON.
         response = self.llm.invoke([HumanMessage(content=check_prompt)])
         return "OUI" in response.content.upper()
 
+    def _extract_cities(self, query: str) -> list[str]:
+        prompt = f"""Extrait tous les noms de villes mentionnés dans cette question.
+    Réponds UNIQUEMENT avec les noms de villes séparés par des virgules, sans ponctuation ni explication.
+    Si la question mentionne un pays, donne sa grande ville principale.
+    Si aucune ville n'est mentionnée, réponds "Paris".
+    
+    Exemples :
+    - "météo à Paris et Lyon ?" → Paris, Lyon
+    - "quel temps à Londres et Berlin ?" → London, Berlin
+    - "météo au Maroc ?" → Casablanca
+    
+    Question : {query}
+    Villes :"""
+        response = self.llm.invoke([HumanMessage(content=prompt)])
+        cities = [c.strip() for c in response.content.split(",")]
+        return cities
+
     def decide_and_answer(self, query: str, history: str = "") -> tuple[str, list, str]:
         tool = self._route(query)
 
@@ -60,7 +77,9 @@ Réponds UNIQUEMENT par OUI ou NON.
             answer, sources = web_search(query)
             return answer, sources, "🌐 Web Search"
         elif tool == "METEO":
-            return get_weather("Paris"), [], "🌤️ Météo"
+            cities = self._extract_cities(query)
+            results = [get_weather(city) for city in cities]
+            return "\n\n".join(results), [], "🌤️ Météo"
         elif tool == "CALCUL":
             return calculate(query), [], "🔢 Calcul"
         elif tool == "RESUME":
