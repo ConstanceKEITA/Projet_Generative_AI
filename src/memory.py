@@ -1,6 +1,5 @@
 from langchain_core.messages import HumanMessage, AIMessage
 
-
 class MemoryManager:
     """
     Gère la mémoire conversationnelle pour l'assistant.
