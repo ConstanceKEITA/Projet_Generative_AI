@@ -6,3 +6,4 @@ data/vectorstore/
 .files/
 public/avatars/
 .chainlit/translations/
+.idea/
