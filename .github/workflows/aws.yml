@@ -5,9 +5,9 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: eu-west-1
+  AWS_REGION: eu-west-3
   ECR_REPOSITORY: aequitas
-  ECS_SERVICE: aequitas-service
+  ECS_SERVICE: aequitas-task-service-9hh4255f  # nom exact de ton service
   ECS_CLUSTER: aequitas-cluster
   ECS_TASK_DEFINITION: aequitas-task
   CONTAINER_NAME: aequitas
