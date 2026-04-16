@@ -99,7 +99,7 @@ Réponse :"""
 
     except Exception as e:
         log.warning(f"Erreur web_search : {e}")
-        return f"Erreur lors de la recherche : {e}"
+        return f"Erreur lors de la recherche : {e}", []
 
 
 if __name__ == "__main__":
