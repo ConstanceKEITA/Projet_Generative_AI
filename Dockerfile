@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 EXPOSE 8000
 
-CMD ["chainlit", "run", "src/app_chainlit.py", "--server.address=0.0.0.0", "--server.port=8000"]
+CMD ["chainlit", "run", "src/app_chainlit.py", "--host=0.0.0.0", "--port=8000"]
